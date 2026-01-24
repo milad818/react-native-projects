@@ -1,11 +1,35 @@
 import { KeyboardAvoidingView, Platform, View, StyleSheet } from "react-native";
-import { Button, Text, TextInput } from 'react-native-paper';
+import { Button, Text, TextInput, useTheme } from 'react-native-paper';
 import { useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 
 export default function AuthScreen() {
 
   const [isSignedUp, setIsSignedUp] = useState<boolean>(false);
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string | null>("");
 
+  const theme = useTheme();
+
+  const { signIn, signUp } = useAuth();
+
+  const handleAuth = async () => {
+    if (!email || !password) {
+      setError("Please fill in all the fields.")
+      return;
+    }
+
+    if(password.length < 6) {
+      setError("Passwords must be at least 6 characters long.");
+      return;
+    }
+
+    setError(null);
+
+
+  }
+  
   const handleSwitchMode = () => {
     setIsSignedUp((prev) => !prev);
   }
@@ -24,16 +48,23 @@ export default function AuthScreen() {
           keyboardType="email-address"
           placeholder="example@gmail.com"
           mode="outlined"
-          style={styles.input} />
+          style={styles.input}
+          onChangeText={setEmail} />
 
         <TextInput
-        label="Password"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        mode="outlined"
-        style={styles.input} />
+          label="Password"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          mode="outlined"
+          style={styles.input}
+          onChangeText={setPassword} />
 
-        <Button style={styles.button} mode="contained">{isSignedUp ? "Sign Up" : "Sign In"}</Button>
+        {error && <Text style={{ color: theme.colors.error, alignSelf: "center", width: "90%" }}>{error}</Text>}
+
+        <Button style={styles.button} 
+                mode="contained"
+                onPress={handleAuth}>
+          { isSignedUp ? "Sign Up" : "Sign In"}</Button>
 
         <Button mode="text"
                 onPress={handleSwitchMode}
@@ -80,5 +111,6 @@ const styles = StyleSheet.create({
 
   switchModeButton: {
     marginTop: 16
-  }
+  },
+
 });
