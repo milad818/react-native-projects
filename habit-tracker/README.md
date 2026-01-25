@@ -1,50 +1,67 @@
-# Welcome to your Expo app 👋
+# Habit Tracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Habit Tracker is a React Native-based mobile application designed to help users build and maintain good habits. With this app, users can set goals, track their progress, and stay motivated to achieve their daily or long-term habits.
 
-## Get started
+## Features
 
-1. Install dependencies
+- Create and manage habits.
+- Track daily progress.
+- View habit statistics and insights.
+- User authentication for personalized habit tracking.
+
+## Getting Started
+
+Follow these steps to set up and run the project locally:
+
+### Prerequisites
+
+- Node.js installed on your system.
+- Expo CLI installed globally. You can install it using:
+
+  ```bash
+  npm install -g expo-cli
+  ```
+
+### Installation
+
+1. Clone the repository:
+
+   ```bash
+   git clone <repository-url>
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd habit-tracker
+   ```
+
+3. Install dependencies:
 
    ```bash
    npm install
    ```
 
-2. Start the app
+### Running the App
+
+1. Start the development server:
 
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+2. Choose one of the following options to open the app:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+   - Use a development build.
+   - Open it in an Android emulator or iOS simulator.
+   - Scan the QR code with the Expo Go app on your physical device.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Resetting the Project
 
-## Get a fresh project
-
-When you're ready, run:
+If you want to reset the project to a blank state, run:
 
 ```bash
 npm run reset-project
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
