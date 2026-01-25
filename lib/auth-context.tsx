@@ -1,12 +1,14 @@
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { Models, ID } from "react-native-appwrite";
 import { account } from "./appwrite";
 
 
 type AuthContextType = {
-  // user: Models.User<Models.Preferences> | null;
+  user: Models.User<Models.Preferences> | null;
+  isLoadingUser: boolean
   signUp: (email: string, password: string) => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<string | null>;
+  signOut: () => Promise<void>;
 }
 
 // Create context to define the shared data store
@@ -17,6 +19,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // interface Props { children: React.ReactNode; } passing props to AuthProvider
 export function AuthProvider({children}: {children: React.ReactNode}) {
   
+  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null)
+  const [isLoadingUser, setIsLoadingUser] = useState<boolean>(false)
+
+  // Call getUser function when AuthProvider renders
+  useEffect(() => {
+    getUser();
+  }, [])
+
+  // Check to see if there is a session for the user when AuthProvider is first rendered
+  const getUser = async () => {
+    try {
+      const session = await account.get()
+      setUser(session);
+    } catch (error) {
+      setUser(null);
+    } finally {
+      setIsLoadingUser(false);
+    }
+  }
+
   const signUp = async (email: string, password:string) => {
     try {
       await account.create(ID.unique(), email, password);
@@ -33,9 +55,11 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
   };
 
-  const signIn = async (email: string, password:string) => {
+  const signIn = async (email: string, password: string) => {
     try {
-      await account.createEmailPasswordSession(email, password)
+      await account.createEmailPasswordSession(email, password);
+      const session = await account.get();
+      setUser(session); // Update the user state after signing in
       return null;
     } catch (error) {
       if (error instanceof Error) {
@@ -46,12 +70,21 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     }
   };
 
+  const signOut = async () => {
+    try {
+      await account.deleteSession("current");
+      setUser(null);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   return (
   // The <AuthContext.Provider> tag is a React Context Provider that wraps its children components and makes the value it provides accessible to all of them.
   // return component tree in <AuthContext.Provider> and pass it a value
-  // Therefore, you can access tha value inside any child component via useContext()
+  // Therefore, you can access tha value inside any child component e.g., RouteGuard via useContext()
   <AuthContext.Provider
-  value={{ signUp, signIn }}>
+  value={{ user, isLoadingUser, signUp, signIn, signOut }}>
     {children}
   </AuthContext.Provider>);
 }
