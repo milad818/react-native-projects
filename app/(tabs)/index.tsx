@@ -98,6 +98,23 @@ export default function Index() {
     }
   }
 
+  const deleteHabit = async (id: string) => {
+
+    try {
+      await databases.deleteDocument(
+        DATABASE_ID,
+        HABITS_COLLECTION_ID,
+        id
+      )
+    } catch (error) {
+      if (error instanceof Error) {
+        return error.message;
+      }
+
+      return "An error occured during habit deletion!"
+    }
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -106,7 +123,7 @@ export default function Index() {
           Sign Out
         </Button>
       </View>
-      <ScrollView>
+      <ScrollView showsVerticalScrollIndicator={false}>
         {habits?.length === 0 ? (
           <View style={styles.emptyState} >
             <Text style={styles.emptyStateText}>No habits yet. Add your first habit!</Text>
@@ -117,7 +134,10 @@ export default function Index() {
           habits?.map((habit, key) => (
             <Surface style={styles.card} key={key} elevation={2}>
               <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}> {habit.title} </Text>
+                <View style={styles.heading}>
+                  <Text style={styles.cardTitle}> {habit.title} </Text>
+                  <Text style={styles.deleteButton} onPress={() => deleteHabit(habit.$id.toString())}> Delete </Text>
+                </View>
                 <Text style={styles.cardDescription}> {habit.description} </Text>
                 <View style={styles.cardFooter}>
                   <View style={styles.streakBadge}>
@@ -160,6 +180,17 @@ const styles = StyleSheet.create({
 
   title: {
     fontWeight: "bold"
+  },
+
+  heading: {
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+
+  deleteButton: {
+    paddingTop: 5,
+    paddingRight: 3,
+    textDecorationLine: "underline"
   },
 
   emptyState: {
