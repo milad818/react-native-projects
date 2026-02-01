@@ -1,20 +1,22 @@
 import { DATABASE_ID, databases, HABITS_COLLECTION_ID, client, RealtimeResponse } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
 import { Habit } from "@/types/database.type";
-import MaterialCommunityIcons from '@expo/vector-icons/AntDesign';
-import { Link } from "expo-router";
-import { useEffect, useState } from "react";
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
 import { Query } from "react-native-appwrite";
-import { Button, Card, Surface, Text } from "react-native-paper";
-import { red } from "react-native-reanimated/lib/typescript/Colors";
+import { Swipeable } from "react-native-gesture-handler";
+import ReanimatedSwipeable, { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
+import { Button, Surface, Text } from "react-native-paper";
+
 
 export default function Index() {
 
   const { signOut, user } = useAuth();
-
   // NOTE! The state defined below is a list of Habit objects
   const [habits, setHabits] = useState<Habit[]>();
+
+  const swipeableRefs = useRef<{ [key: string]: Swipeable | null }>({});
 
   // Fetch habits every time the user navigates to this screen (Today's Habits)
   // And it will reload only if the user changes passing the user to the dependency array
@@ -98,22 +100,59 @@ export default function Index() {
     }
   }
 
-  const deleteHabit = async (id: string) => {
+  // In case of inserting a delete button
+  // const deleteHabit = async (id: string) => {
 
+  //   try {
+  //     await databases.deleteDocument(
+  //       DATABASE_ID,
+  //       HABITS_COLLECTION_ID,
+  //       id
+  //     )
+  //   } catch (error) {
+  //     if (error instanceof Error) {
+  //       return error.message;
+  //     }
+
+  //     return "An error occured during habit deletion!"
+  //   }
+  // };
+
+  const handleDeleteHabit = async (id: string) => {
     try {
+
+      console.log("Swipeable Refs (BEFORE DELETING): \n", swipeableRefs)
+
       await databases.deleteDocument(
         DATABASE_ID,
         HABITS_COLLECTION_ID,
         id
       )
+      console.log("Swipeable Refs (AFTER DELETING): \n", swipeableRefs)
     } catch (error) {
       if (error instanceof Error) {
         return error.message;
       }
 
-      return "An error occured during habit deletion!"
+      return "An error occured deleting a record/entry!"
     }
   }
+
+  const renderRightActions = () => (
+    <View style={styles.swipeActionRight}>
+      <MaterialCommunityIcons name="check-circle-outline"
+        size={32}
+        color={"#fff"} />
+    </View>
+  );
+
+  const renderLeftActions = () => (
+    <View style={styles.swipeActionLeft}>
+      <MaterialCommunityIcons name="trash-can-outline"
+        size={32}
+        color={"#fff"} />
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -132,29 +171,46 @@ export default function Index() {
           // "?" below/above prevents a crash if habits is still undefined
           // unless initialized with and empty array []
           habits?.map((habit, key) => (
-            <Surface style={styles.card} key={key} elevation={2}>
-              <View style={styles.cardContent}>
-                <View style={styles.heading}>
+            <Swipeable  ref={(ref) => {
+              swipeableRefs.current[habit.$id] = ref;
+              }}
+              key={key}
+              overshootLeft={false}
+              overshootRight={false}
+              renderLeftActions={renderLeftActions}
+              renderRightActions={renderRightActions}
+              onSwipeableOpen={(direction) => {
+                if (direction === "left") {
+                  // swipeableRefs.current[habit.$id]?.close();
+                  handleDeleteHabit(habit.$id);
+                }
+                // Set timeout to make sure deletion takes place before closing
+                setTimeout(() => {
+                  swipeableRefs.current[habit.$id]?.close();
+                }, 400)            
+              }}  
+            >
+              <Surface style={styles.card} elevation={2}>
+                <View style={styles.cardContent}>
                   <Text style={styles.cardTitle}> {habit.title} </Text>
-                  <Text style={styles.deleteButton} onPress={() => deleteHabit(habit.$id.toString())}> Delete </Text>
-                </View>
-                <Text style={styles.cardDescription}> {habit.description} </Text>
-                <View style={styles.cardFooter}>
-                  <View style={styles.streakBadge}>
-                    <MaterialCommunityIcons
-                      name="fire"
-                      size={18}
-                      color={"#ff8d23"} />
-                    <Text style={styles.streakText}>
-                      {habit.streak_count} day streak
-                    </Text>
+                  <Text style={styles.cardDescription}> {habit.description} </Text>
+                  <View style={styles.cardFooter}>
+                    <View style={styles.streakBadge}>
+                      <MaterialCommunityIcons
+                        name="fire"
+                        size={18}
+                        color={"#ff8d23"} />
+                      <Text style={styles.streakText}>
+                        {habit.streak_count} day streak
+                      </Text>
+                    </View>
+                    <View style={styles.frequencyBadge}>
+                      <Text style={styles.frequencyText}> {habit.frequency.charAt(0).toUpperCase() + habit.frequency.slice(1)}</Text>
+                    </View>
                   </View>
-                  <View style={styles.frequencyBadge}>
-                    <Text style={styles.frequencyText}> {habit.frequency.charAt(0).toUpperCase() + habit.frequency.slice(1)}</Text>
-                  </View>
                 </View>
-              </View>
-            </Surface>
+              </Surface>
+            </Swipeable>
           ))
         )}
       </ScrollView>
@@ -187,11 +243,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between"
   },
 
-  deleteButton: {
-    paddingTop: 5,
-    paddingRight: 3,
-    textDecorationLine: "underline"
-  },
+  // In case of using delete button
+  // deleteButton: {
+  //   paddingTop: 5,
+  //   paddingRight: 3,
+  //   textDecorationLine: "underline"
+  // },
 
   emptyState: {
 
@@ -267,6 +324,27 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 13,
     // textTransform: "uppercase"
-  }
+  },
 
+  swipeActionRight: {
+    justifyContent: "center",
+    alignItems: "flex-end",
+    flex: 1,
+    backgroundColor: "#4caf50",
+    borderRadius: 5,
+    marginBottom: 18,
+    marginTop: 2,
+    paddingRight: 16
+  },
+
+  swipeActionLeft: {
+    justifyContent: "center",
+    alignItems: "flex-start",
+    flex: 1,
+    backgroundColor: "#e53935",
+    borderRadius: 5,
+    marginBottom: 18,
+    marginTop: 2,
+    paddingLeft: 16
+  }
 })
