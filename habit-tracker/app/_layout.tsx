@@ -34,11 +34,11 @@ export default function RootLayout() {
       <AuthProvider>
         <PaperProvider>
           <SafeAreaProvider>
-            {/* <RouteGuard> */}
+            <RouteGuard>
               <Stack>
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               </Stack>
-            {/* </RouteGuard> */}
+            </RouteGuard>
           </SafeAreaProvider>
         </PaperProvider>
       </AuthProvider>

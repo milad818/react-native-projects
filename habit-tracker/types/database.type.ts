@@ -11,3 +11,10 @@ export interface Habit extends Models.Document {
   frequency: string;
   // created_at: string;
 }
+
+
+export interface HabitCompletion extends Models.Document {
+  habit_id: string,
+  user_id: string,
+  completed_at: string
+}

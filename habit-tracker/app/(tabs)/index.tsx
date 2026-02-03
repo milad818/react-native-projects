@@ -1,10 +1,10 @@
-import { DATABASE_ID, databases, HABITS_COLLECTION_ID, client, RealtimeResponse } from "@/lib/appwrite";
+import { DATABASE_ID, databases, HABITS_COLLECTION_ID, client, RealtimeResponse, COMPLETIONS_COLLECTION_ID } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
-import { Habit } from "@/types/database.type";
+import { Habit, HabitCompletion } from "@/types/database.type";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
-import { Query } from "react-native-appwrite";
+import { Query, ID } from "react-native-appwrite";
 import { Swipeable } from "react-native-gesture-handler";
 import ReanimatedSwipeable, { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { Button, Surface, Text } from "react-native-paper";
@@ -15,6 +15,8 @@ export default function Index() {
   const { signOut, user } = useAuth();
   // NOTE! The state defined below is a list of Habit objects
   const [habits, setHabits] = useState<Habit[]>();
+  const [completedHabits, setCompletedHabits] = useState<string[]>();
+
 
   const swipeableRefs = useRef<{ [key: string]: Swipeable | null }>({});
 
@@ -24,11 +26,11 @@ export default function Index() {
     if (user) {
       // Build the realtime channel string for listening to document changes
       // in the Habits collection of the specified database
-      const channel = `databases.${DATABASE_ID}.collections.${HABITS_COLLECTION_ID}.documents`
+      const habitsChannel = `databases.${DATABASE_ID}.collections.${HABITS_COLLECTION_ID}.documents`
 
       // Subscribe to realtime events on the Habits collection
       const habitsSubscription = client.subscribe(
-        channel,
+        habitsChannel,
         (response: RealtimeResponse) => {
 
           // Check which type of event was triggered
@@ -48,15 +50,33 @@ export default function Index() {
         }
       )
 
+      const completionsChannel = `databases.${DATABASE_ID}.collections.${COMPLETIONS_COLLECTION_ID}.documents`
+
+      // Subscribe to realtime events on the Habits collection
+      const completionsSubscription = client.subscribe(
+        completionsChannel,
+        (response: RealtimeResponse) => {
+
+          // In this case, delete or update are never triggered
+          const isCreate = response.events.includes("databases.*.collections.*.documents.*.create")
+
+          if (isCreate) {
+            fetchTodayCompletions();
+          }
+        }
+      )
+
       // Initial fetch when the component mounts
       // or when the `user` dependency changes
       fetchHabits();
+      fetchTodayCompletions();
 
       // Cleanup function:
       // unsubscribe from realtime updates when the component unmounts
       // or before re-running the effect
       return () => {
         habitsSubscription();
+        completionsSubscription();
       };
     }
   }, [user]) // Re-run effect when the user changes. [Why wouldn't add habits to dependency array to fetch the most recent?]
@@ -100,6 +120,26 @@ export default function Index() {
     }
   }
 
+  const fetchTodayCompletions = async () => {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const response = await databases.listDocuments<HabitCompletion>(
+        DATABASE_ID,
+        COMPLETIONS_COLLECTION_ID,
+        [Query.equal("user_id", user?.$id ?? ""),
+          Query.greaterThanEqual("completed_at", today.toISOString())
+        ]
+      )
+
+      const completions = response.documents as HabitCompletion[];
+      setCompletedHabits(completions.map((c) => c.habit_id));
+
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   // In case of inserting a delete button
   // const deleteHabit = async (id: string) => {
 
@@ -121,14 +161,14 @@ export default function Index() {
   const handleDeleteHabit = async (id: string) => {
     try {
 
-      console.log("Swipeable Refs (BEFORE DELETING): \n", swipeableRefs)
+      // console.log("Swipeable Refs (BEFORE DELETING): \n", swipeableRefs)
 
       await databases.deleteDocument(
         DATABASE_ID,
         HABITS_COLLECTION_ID,
-        id
+        ID.unique(),
       )
-      console.log("Swipeable Refs (AFTER DELETING): \n", swipeableRefs)
+      // console.log("Swipeable Refs (AFTER DELETING): \n", swipeableRefs)
     } catch (error) {
       if (error instanceof Error) {
         return error.message;
@@ -138,11 +178,49 @@ export default function Index() {
     }
   }
 
-  const renderRightActions = () => (
+  const handleCompleteHabit = async (id: string) => {
+
+    if (!user || completedHabits?.includes(id)) return;
+    try {
+
+      const currentDate = new Date().toISOString()
+      await databases.createDocument(
+        DATABASE_ID,
+        COMPLETIONS_COLLECTION_ID,
+        ID.unique(),
+        {
+          habit_id: id,
+          user_id: user.$id,
+          completed_at: currentDate
+        }
+      );
+      const habit = habits?.find((h) => h.$id === id)
+      if (!habit) return;
+      await databases.updateDocument(DATABASE_ID,
+                                    HABITS_COLLECTION_ID,
+                                    id,
+                                    { streak_count: habit.streak_count + 1 ,
+                                      last_completed: currentDate})
+    } catch (error) {
+      if (error instanceof Error) {
+        return error.message;
+      }
+
+      return "An error occured handling habit completion!"
+    }
+  }
+
+  const isHabitCompleted = (habitId: string) => completedHabits?.includes(habitId);
+
+  const renderRightActions = (habitId: string) => (
     <View style={styles.swipeActionRight}>
+      {isHabitCompleted(habitId) ? 
+      (<Text style={{color: "#fff"}}> Completed </Text>) :
+      
       <MaterialCommunityIcons name="check-circle-outline"
         size={32}
         color={"#fff"} />
+      }
     </View>
   );
 
@@ -171,26 +249,29 @@ export default function Index() {
           // "?" below/above prevents a crash if habits is still undefined
           // unless initialized with and empty array []
           habits?.map((habit, key) => (
-            <Swipeable  ref={(ref) => {
+            <Swipeable ref={(ref) => {
               swipeableRefs.current[habit.$id] = ref;
-              }}
+            }}
               key={key}
               overshootLeft={false}
               overshootRight={false}
               renderLeftActions={renderLeftActions}
-              renderRightActions={renderRightActions}
+              renderRightActions={() => renderRightActions(habit.$id)}
               onSwipeableOpen={(direction) => {
                 if (direction === "left") {
                   // swipeableRefs.current[habit.$id]?.close();
                   handleDeleteHabit(habit.$id);
+                } else if (direction === "right") {
+                  handleCompleteHabit(habit.$id);
                 }
                 // Set timeout to make sure deletion takes place before closing
                 setTimeout(() => {
                   swipeableRefs.current[habit.$id]?.close();
-                }, 400)            
-              }}  
+                }, 400)
+              }}
             >
-              <Surface style={styles.card} elevation={2}>
+              <Surface style={[styles.card,
+                isHabitCompleted(habit.$id) && styles.cardCompleted]} elevation={2}>
                 <View style={styles.cardContent}>
                   <Text style={styles.cardTitle}> {habit.title} </Text>
                   <Text style={styles.cardDescription}> {habit.description} </Text>
@@ -266,6 +347,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
+  },
+
+  cardCompleted: {
+    opacity: 0.6,
   },
 
   cardContent: {
