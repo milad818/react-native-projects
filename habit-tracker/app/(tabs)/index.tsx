@@ -216,10 +216,10 @@ export default function Index() {
     <View style={styles.swipeActionRight}>
       {isHabitCompleted(habitId) ? 
       (<Text style={{color: "#fff"}}> Completed </Text>) :
-      
+      (
       <MaterialCommunityIcons name="check-circle-outline"
         size={32}
-        color={"#fff"} />
+        color={"#fff"} /> )
       }
     </View>
   );
