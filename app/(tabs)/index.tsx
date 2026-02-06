@@ -64,7 +64,7 @@ export default function Index() {
             fetchTodayCompletions();
           }
         }
-      )
+      );
 
       // Initial fetch when the component mounts
       // or when the `user` dependency changes
@@ -136,7 +136,7 @@ export default function Index() {
       setCompletedHabits(completions.map((c) => c.habit_id));
 
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   }
 
@@ -166,7 +166,7 @@ export default function Index() {
       await databases.deleteDocument(
         DATABASE_ID,
         HABITS_COLLECTION_ID,
-        ID.unique(),
+        id,
       )
       // console.log("Swipeable Refs (AFTER DELETING): \n", swipeableRefs)
     } catch (error) {
