@@ -190,16 +190,36 @@ export default function StreaksScreen() {
     return { habit, bestStreak, streak, total }
   })
 
-  const rankedHabits = habitStreaks.sort((a, b) => a.bestStreak - b.bestStreak);
+  const rankedHabits = habitStreaks.sort((b, a) => a.bestStreak - b.bestStreak);
+  // console.log(rankedHabits.length)
   // Log titles to check if the order is as expected
   // console.log("Ranked completed habit titles: \n", rankedHabits.map((rh) => (rh.habit.title)))
 
+  const badgeStyles = [styles.badge1, styles.badge2, styles.badge3]
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}> Habit Streaks </Text>
+      <Text style={styles.title} variant="headlineSmall"> Habit Streaks </Text>
+
+      {rankedHabits.length > 0 && (
+        <View style={styles.rankingContainer}>
+          <Text style={styles.rankingTitle}>
+            🏅 Top Streaks
+          </Text>
+          {rankedHabits.slice(0, 3).map((item, key) => (
+            <View key={key} style={styles.rankingRow}>
+              <View style={[styles.rankingBadge, badgeStyles[key]]}>
+                <Text style={styles.rankingBadgeText}> {key + 1} </Text>
+              </View>
+              <Text style={styles.rankingHabit}> {item.habit.title} </Text>
+              <Text style={styles.rankingStreak}> {item.streak} </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
       {habits.length === 0 ? (
         <View>
-          {" "}
           <Text> No habits yet. Add your first habit! </Text>
         </View>) : (
         <ScrollView showsVerticalScrollIndicator={false}
@@ -232,11 +252,12 @@ export default function StreaksScreen() {
 
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
-    padding: 16
+    padding: 8
   },
 
   title: {
@@ -259,7 +280,7 @@ const styles = StyleSheet.create({
 
   firstCard: {
     borderWidth: 2,
-    borderColor: "#7c4dff"
+    borderColor: "#4d62ff"
   },
 
   habitTitle: {
@@ -318,5 +339,77 @@ const styles = StyleSheet.create({
     color: "#888",
     marginTop: 2,
     fontWeight: "500"
+  },
+
+  rankingContainer: {
+    marginBottom: 24,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: "#f0f0f0"
+  },
+
+  rankingTitle: {
+    fontWeight: "bold",
+    fontSize: 18,
+    marginBottom: 12,
+    color: "#4d62ff",
+    letterSpacing: 0.5
+  },
+
+  rankingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#f0f0f0",
+    paddingBottom: 8
+  },
+
+  rankingBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+    backgroundColor: "#e0e0e0"
+  },
+
+  badge1: {
+    backgroundColor: "gold",
+  },
+
+  badge2: {
+    backgroundColor: "silver",
+  },
+
+  badge3: {
+    backgroundColor: "#cd7f32",
+  },
+
+  rankingBadgeText: {
+    fontWeight: "bold",
+    color: "#fff",
+    fontSize: 15
+  },
+
+  rankingHabit: {
+    flex: 1,
+    fontSize: 15,
+    color: "#333",
+    fontWeight: "600"
+  },
+
+  rankingStreak: {
+    fontSize: 14,
+    color: "#4d62ff",
+    fontWeight: "bold"
   }
 })
