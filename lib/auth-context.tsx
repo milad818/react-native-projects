@@ -20,7 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({children}: {children: React.ReactNode}) {
   
   const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null)
-  const [isLoadingUser, setIsLoadingUser] = useState<boolean>(false)
+  const [isLoadingUser, setIsLoadingUser] = useState<boolean>(true)
 
   // Call getUser function when AuthProvider renders
   useEffect(() => {
